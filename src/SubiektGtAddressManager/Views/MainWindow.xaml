@@ -1,0 +1,224 @@
+<Window x:Class="SubiektGtAddressManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:SubiektGtAddressManager.Models"
+        Title="Zarządzanie adresami kontrahentów — Subiekt GT"
+        Icon="/Assets/SubiektGtAddressManager.ico"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Width="1500" Height="800"
+        MinWidth="700" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveCommand}"/>
+        <KeyBinding Key="F" Modifiers="Control" Command="{x:Static ApplicationCommands.Find}"/>
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static ApplicationCommands.Find}" Executed="FocusSearch_Executed"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+
+        <Style x:Key="AddressFieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+        <Style x:Key="AddressWarning" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,2,0,14"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="3*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="False">
+            <Button x:Name="ThemeToggleButton" Content="Ciemny motyw" Padding="6,2" DockPanel.Dock="Right" Margin="8,0,0,0" Click="ThemeToggleButton_Click"/>
+            <Button Content="Utwórz skrót na pulpicie" Padding="6,2" DockPanel.Dock="Right" Margin="8,0,0,0" Click="CreateShortcutButton_Click"/>
+            <Button Content="Otwórz folder logów" Padding="6,2" DockPanel.Dock="Right" Click="OpenLogsButton_Click"/>
+            <Button Content="Odśwież" Padding="10,4" Margin="0,0,8,0" DockPanel.Dock="Left" Command="{Binding RefreshCommand}"/>
+            <Button Content="Zapisz zmiany" Padding="10,4" Margin="0,0,16,0" DockPanel.Dock="Left" Command="{Binding SaveCommand}"/>
+            <ProgressBar Width="140" Height="16" Minimum="0" Maximum="100" Margin="0,0,16,0" VerticalAlignment="Center" DockPanel.Dock="Left"
+                         Value="{Binding SaveProgress, Mode=OneWay}"
+                         Visibility="{Binding IsSaving, Converter={StaticResource BoolToVisibilityConverter}}"/>
+            <CheckBox Content="Tylko z ostrzeżeniami" VerticalAlignment="Center" Margin="0,0,16,0" DockPanel.Dock="Left"
+                      IsChecked="{Binding ShowOnlyWithWarnings}"/>
+            <TextBlock Text="Szukaj:" VerticalAlignment="Center" Margin="0,0,4,0" DockPanel.Dock="Left"/>
+            <TextBox x:Name="SearchTextBox" Width="220" VerticalAlignment="Center" DockPanel.Dock="Left" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"/>
+        </DockPanel>
+
+        <DataGrid x:Name="ContractorsGrid" Grid.Row="1" ItemsSource="{Binding RowsView}" AutoGenerateColumns="False"
+                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False"
+                  SelectionMode="Extended" GridLinesVisibility="Horizontal"
+                  SelectionUnit="FullRow"
+                  SelectionChanged="ContractorsGrid_SelectionChanged">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Kod" Binding="{Binding Code}" IsReadOnly="True" Width="110"/>
+                <DataGridTextColumn Header="Nazwa" Binding="{Binding Name}" IsReadOnly="True" Width="180"/>
+                <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" IsReadOnly="True" Width="120"/>
+                <DataGridTextColumn Header="GLN siedziby" Binding="{Binding Gln, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                <DataGridTextColumn Header="GLN korespondencyjny" Binding="{Binding CorrespondenceGln, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
+                <DataGridCheckBoxColumn Header="Użyj adresu koresp." Binding="{Binding UseCorrespondenceAddress, UpdateSourceTrigger=PropertyChanged}" Width="120"/>
+                <DataGridTextColumn Header="GLN dostawy" Binding="{Binding DeliveryGln, UpdateSourceTrigger=PropertyChanged}" Width="130"/>
+                <DataGridComboBoxColumn Header="Dodawaj do e-Faktury"
+                                         ItemsSource="{x:Static models:EInvoiceModeOptions.All}"
+                                         SelectedValueBinding="{Binding EInvoiceMode}"
+                                         SelectedValuePath="Value" DisplayMemberPath="Label" Width="160"/>
+                <DataGridTextColumn Header="Ostrzeżenia" Binding="{Binding WarningSummary, Mode=OneWay}" IsReadOnly="True" Width="160">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridCheckBoxColumn Header="Zmieniono" Binding="{Binding IsDirty, Mode=OneWay}" IsReadOnly="True" Width="80"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="8" Margin="0,4,0,0"
+                Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,16,0">
+                    <Run Text="Edycja zbiorcza — zaznaczono: "/>
+                    <Run Text="{Binding SelectedCount, Mode=OneWay}"/>
+                </TextBlock>
+
+                <TextBlock Text="e-Faktura:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <ComboBox Width="150" Margin="0,0,4,0" VerticalAlignment="Center"
+                          ItemsSource="{x:Static models:EInvoiceModeOptions.All}"
+                          SelectedValuePath="Value"
+                          SelectedValue="{Binding BulkEInvoiceMode}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:EInvoiceModeOption}">
+                            <TextBlock Text="{Binding Label}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="Ustaw" Padding="8,2" Command="{Binding ApplyBulkEInvoiceModeCommand}"/>
+            </StackPanel>
+        </Border>
+
+        <GridSplitter Grid.Row="3" HorizontalAlignment="Stretch" Height="6" Margin="0,4" Background="{DynamicResource BorderBrush}"/>
+
+        <Border Grid.Row="4" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel DataContext="{Binding SelectedItem, ElementName=ContractorsGrid}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock FontWeight="Bold" Margin="0,0,0,10" FontSize="13">
+                        <Run Text="Szczegóły adresów — "/>
+                        <Run Text="{Binding Code, Mode=OneWay}"/>
+                        <Run Text=" ("/>
+                        <Run Text="{Binding Name, Mode=OneWay}"/>
+                        <Run Text=")"/>
+                    </TextBlock>
+
+                    <TextBlock Text="Adres siedziby" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <TextBlock Text="Ulica" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding HeadOffice.Street, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                            <TextBlock Text="Nr domu" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding HeadOffice.HouseNumber, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                            <TextBlock Text="Kod pocztowy" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding HeadOffice.PostalCode, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="Miejscowość" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding HeadOffice.City, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="⚠ GLN adresu siedziby jest uzupełniony, ale adres (ulica/nr domu/kod/miejscowość) jest niekompletny — GLN nie pojawi się na e-Fakturze."
+                               Style="{StaticResource AddressWarning}"
+                               Visibility="{Binding HeadOfficeGlnWarning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <TextBlock Text="Adres korespondencyjny" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <TextBlock Text="Ulica" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Correspondence.Street, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                            <TextBlock Text="Nr domu" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Correspondence.HouseNumber, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                            <TextBlock Text="Kod pocztowy" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Correspondence.PostalCode, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="Miejscowość" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Correspondence.City, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="⚠ GLN adresu korespondencyjnego jest uzupełniony, ale adres jest niekompletny (albo checkbox &quot;Użyj adresu koresp.&quot; nie jest zaznaczony) — GLN nie pojawi się na e-Fakturze."
+                               Style="{StaticResource AddressWarning}"
+                               Visibility="{Binding CorrespondenceGlnWarning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <TextBlock Text="Adres dostawy" FontWeight="Bold" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                            <TextBlock Text="Ulica" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Delivery.Street, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                            <TextBlock Text="Nr domu" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Delivery.HouseNumber, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                            <TextBlock Text="Kod pocztowy" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Delivery.PostalCode, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="Miejscowość" Style="{StaticResource AddressFieldLabel}"/>
+                            <TextBox Text="{Binding Delivery.City, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="⚠ GLN adresu dostawy jest uzupełniony i tryb e-Faktury jest włączony, ale adres jest niekompletny — GLN nie pojawi się na e-Fakturze."
+                               Style="{StaticResource AddressWarning}"
+                               Visibility="{Binding DeliveryGlnWarning, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock Grid.Row="5" Text="{Binding Status}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+    </Grid>
+</Window>

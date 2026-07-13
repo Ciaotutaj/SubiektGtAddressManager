@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{15231BEB-F8F6-4A9C-A329-8B1458A51273}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubiektGtAddressManager", "src\SubiektGtAddressManager\SubiektGtAddressManager.csproj", "{90A73485-97B4-4093-B374-42BCF9C0B6E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{90A73485-97B4-4093-B374-42BCF9C0B6E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90A73485-97B4-4093-B374-42BCF9C0B6E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90A73485-97B4-4093-B374-42BCF9C0B6E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90A73485-97B4-4093-B374-42BCF9C0B6E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{90A73485-97B4-4093-B374-42BCF9C0B6E1} = {15231BEB-F8F6-4A9C-A329-8B1458A51273}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AEC99180-3741-4D09-BCF5-AD7D5F742B16}
+	EndGlobalSection
+EndGlobal
